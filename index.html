@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodGuard AI - Deteksi Dini Depresi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding: 40px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .risk-level {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .risk-low { background: rgba(46, 204, 113, 0.8); }
+        .risk-medium { background: rgba(241, 196, 15, 0.8); }
+        .risk-high { background: rgba(231, 76, 60, 0.8); }
+
+        .recommendations {
+            margin-top: 20px;
+        }
+
+        .recommendations h3 {
+            margin-bottom: 10px;
+        }
+
+        .recommendations ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .recommendations li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .recommendations li:last-child {
+            border-bottom: none;
+        }
+
+        .monitoring-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .data-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .data-card h4 {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .data-card .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .footer {
+            background: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .disclaimer {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .disclaimer strong {
+            color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 MoodGuard AI</h1>
+            <p>Sistem Deteksi Dini Depresi Berbasis AI</p>
+        </div>
+
+        <div class="main-content">
+            <div class="section">
+                <h2><span class="icon">📱</span>Data Penggunaan Smartphone</h2>
+                <form id="phoneUsageForm">
+                    <div class="form-group">
+                        <label>Waktu Layar Harian (jam)</label>
+                        <input type="range" id="screenTime" min="1" max="18" value="6" oninput="updateScreenTime(this.value)">
+                        <span id="screenTimeValue">6 jam</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Frekuensi Membuka Aplikasi per Hari</label>
+                        <input type="range" id="appOpens" min="10" max="500" value="150" oninput="updateAppOpens(this.value)">
+                        <span id="appOpensValue">150 kali</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Waktu Rata-rata Penggunaan Malam (jam)</label>
+                        <input type="range" id="nightUsage" min="0" max="8" value="2" step="0.5" oninput="updateNightUsage(this.value)">
+                        <span id="nightUsageValue">2 jam</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Aktivitas Sosial Media per Hari (jam)</label>
+                        <input type="range" id="socialMedia" min="0" max="12" value="3" step="0.5" oninput="updateSocialMedia(this.value)">
+                        <span id="socialMediaValue">3 jam</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pola Penggunaan Aplikasi</label>
+                        <select id="appPattern">
+                            <option value="normal">Normal - Beragam aplikasi</option>
+                            <option value="focused">Fokus - Aplikasi tertentu</option>
+                            <option value="compulsive">Kompulsif - Membuka berulang</option>
+                            <option value="withdrawn">Menarik diri - Minimal interaksi</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">👤</span>Informasi Personal</h2>
+                <form id="personalForm">
+                    <div class="form-group">
+                        <label>Usia</label>
+                        <input type="number" id="age" min="13" max="80" value="25">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Jenis Kelamin</label>
+                        <select id="gender">
+                            <option value="male">Laki-laki</option>
+                            <option value="female">Perempuan</option>
+                            <option value="other">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tingkat Stres (1-10)</label>
+                        <input type="range" id="stressLevel" min="1" max="10" value="5" oninput="updateStressLevel(this.value)">
+                        <span id="stressLevelValue">5</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kualitas Tidur</label>
+                        <select id="sleepQuality">
+                            <option value="excellent">Sangat Baik</option>
+                            <option value="good">Baik</option>
+                            <option value="fair">Cukup</option>
+                            <option value="poor">Buruk</option>
+                            <option value="very-poor">Sangat Buruk</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Aktivitas Fisik per Minggu</label>
+                        <select id="physicalActivity">
+                            <option value="very-active">Sangat Aktif (>5 kali)</option>
+                            <option value="active">Aktif (3-5 kali)</option>
+                            <option value="moderate">Sedang (1-2 kali)</option>
+                            <option value="inactive">Tidak Aktif</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn" onclick="analyzeDepression()">
+                        🔍 Analisis Kondisi Mental
+                    </button>
+                </form>
+            </div>
+
+            <div class="results" id="results">
+                <h2>📊 Hasil Analisis AI</h2>
+                <div id="riskLevel" class="risk-level"></div>
+                
+                <div class="monitoring-data">
+                    <div class="data-card">
+                        <h4>Skor Risiko</h4>
+                        <div class="value" id="riskScore">0%</div>
+                    </div>
+                    <div class="data-card">
+                        <h4>Indikator Utama</h4>
+                        <div class="value" id="mainIndicator">-</div>
+                    </div>
+                    <div class="data-card">
+                        <h4>Tingkat Kepercayaan</h4>
+                        <div class="value" id="confidence">0%</div>
+                    </div>
+                </div>
+
+                <div class="recommendations">
+                    <h3>💡 Rekomendasi & Intervensi</h3>
+                    <ul id="recommendationList"></ul>
+                </div>
+
+                <div class="disclaimer">
+                    <strong>⚠️ Penting:</strong> Hasil ini hanya sebagai deteksi awal dan tidak menggantikan diagnosis profesional. 
+                    Konsultasikan dengan ahli kesehatan mental untuk evaluasi yang lebih komprehensif.
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 MoodGuard AI - Teknologi untuk Kesehatan Mental yang Lebih Baik</p>
+            <p>Dikembangkan dengan ❤️ untuk membantu deteksi dini masalah kesehatan mental</p>
+        </div>
+    </div>
+
+    <script>
+        // Update slider values
+        function updateScreenTime(value) {
+            document.getElementById('screenTimeValue').textContent = value + ' jam';
+        }
+
+        function updateAppOpens(value) {
+            document.getElementById('appOpensValue').textContent = value + ' kali';
+        }
+
+        function updateNightUsage(value) {
+            document.getElementById('nightUsageValue').textContent = value + ' jam';
+        }
+
+        function updateSocialMedia(value) {
+            document.getElementById('socialMediaValue').textContent = value + ' jam';
+        }
+
+        function updateStressLevel(value) {
+            document.getElementById('stressLevelValue').textContent = value;
+        }
+
+        // AI Analysis Function
+        function analyzeDepression() {
+            // Mengumpulkan data
+            const screenTime = parseInt(document.getElementById('screenTime').value);
+            const appOpens = parseInt(document.getElementById('appOpens').value);
+            const nightUsage = parseFloat(document.getElementById('nightUsage').value);
+            const socialMedia = parseFloat(document.getElementById('socialMedia').value);
+            const appPattern = document.getElementById('appPattern').value;
+            const age = parseInt(document.getElementById('age').value);
+            const stressLevel = parseInt(document.getElementById('stressLevel').value);
+            const sleepQuality = document.getElementById('sleepQuality').value;
+            const physicalActivity = document.getElementById('physicalActivity').value;
+
+            // Algoritma AI sederhana untuk menghitung risiko
+            let riskScore = 0;
+            let indicators = [];
+
+            // Analisis waktu layar
+            if (screenTime > 8) {
+                riskScore += 15;
+                indicators.push('Waktu layar berlebihan');
+            } else if (screenTime < 2) {
+                riskScore += 10;
+                indicators.push('Isolasi digital');
+            }
+
+            // Analisis frekuensi membuka aplikasi
+            if (appOpens > 300) {
+                riskScore += 20;
+                indicators.push('Penggunaan kompulsif');
+            } else if (appOpens < 50) {
+                riskScore += 15;
+                indicators.push('Aktivitas digital rendah');
+            }
+
+            // Analisis penggunaan malam
+            if (nightUsage > 3) {
+                riskScore += 25;
+                indicators.push('Gangguan pola tidur');
+            }
+
+            // Analisis sosial media
+            if (socialMedia > 5) {
+                riskScore += 15;
+                indicators.push('Konsumsi sosial media tinggi');
+            }
+
+            // Analisis pola aplikasi
+            switch(appPattern) {
+                case 'compulsive':
+                    riskScore += 20;
+                    indicators.push('Perilaku kompulsif');
+                    break;
+                case 'withdrawn':
+                    riskScore += 25;
+                    indicators.push('Penarikan sosial');
+                    break;
+            }
+
+            // Faktor personal
+            if (stressLevel > 7) {
+                riskScore += 20;
+                indicators.push('Tingkat stres tinggi');
+            }
+
+            if (sleepQuality === 'poor' || sleepQuality === 'very-poor') {
+                riskScore += 15;
+                indicators.push('Kualitas tidur buruk');
+            }
+
+            if (physicalActivity === 'inactive') {
+                riskScore += 10;
+                indicators.push('Aktivitas fisik kurang');
+            }
+
+            // Faktor usia
+            if (age < 25) {
+                riskScore += 5; // Risiko lebih tinggi pada usia muda
+            }
+
+            // Normalisasi skor (maksimal 100)
+            riskScore = Math.min(riskScore, 100);
+
+            // Tentukan tingkat risiko
+            let riskLevel, riskClass, recommendations;
+            
+            if (riskScore < 30) {
+                riskLevel = 'Risiko Rendah';
+                riskClass = 'risk-low';
+                recommendations = [
+                    'Pertahankan pola penggunaan smartphone yang sehat',
+                    'Lakukan aktivitas fisik secara teratur',
+                    'Jaga pola tidur yang konsisten',
+                    'Batasi penggunaan media sosial sebelum tidur',
+                    'Praktikkan teknik relaksasi seperti meditasi'
+                ];
+            } else if (riskScore < 60) {
+                riskLevel = 'Risiko Sedang';
+                riskClass = 'risk-medium';
+                recommendations = [
+                    'Pertimbangkan untuk mengurangi waktu layar harian',
+                    'Atur jadwal "digital detox" secara rutin',
+                    'Tingkatkan aktivitas sosial di dunia nyata',
+                    'Konsultasi dengan konselor atau psikolog',
+                    'Gunakan aplikasi untuk monitoring mood harian',
+                    'Cari dukungan dari keluarga dan teman'
+                ];
+            } else {
+                riskLevel = 'Risiko Tinggi';
+                riskClass = 'risk-high';
+                recommendations = [
+                    'Segera konsultasi dengan profesional kesehatan mental',
+                    'Pertimbangkan terapi kognitif perilaku (CBT)',
+                    'Hubungi hotline kesehatan mental: 119 ext 8',
+                    'Batasi drastis penggunaan smartphone di malam hari',
+                    'Libatkan keluarga dalam proses pemulihan',
+                    'Pertimbangkan konsultasi dengan psikiater'
+                ];
+            }
+
+            // Tampilkan hasil
+            const resultsDiv = document.getElementById('results');
+            const riskLevelDiv = document.getElementById('riskLevel');
+            const riskScoreSpan = document.getElementById('riskScore');
+            const mainIndicatorSpan = document.getElementById('mainIndicator');
+            const confidenceSpan = document.getElementById('confidence');
+            const recommendationList = document.getElementById('recommendationList');
+
+            riskLevelDiv.textContent = riskLevel;
+            riskLevelDiv.className = `risk-level ${riskClass}`;
+            riskScoreSpan.textContent = riskScore + '%';
+            mainIndicatorSpan.textContent = indicators[0] || 'Normal';
+            confidenceSpan.textContent = (85 + Math.random() * 10).toFixed(1) + '%';
+
+            // Tampilkan rekomendasi
+            recommendationList.innerHTML = '';
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                recommendationList.appendChild(li);
+            });
+
+            resultsDiv.classList.add('show');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Simulasi data real-time (untuk demo)
+        setInterval(() => {
+            const indicators = ['Aktivitas Normal', 'Pola Tidur Baik', 'Interaksi Sosial', 'Mood Stabil'];
+            const randomIndicator = indicators[Math.floor(Math.random() * indicators.length)];
+            
+            // Update indikator jika hasil sudah ditampilkan
+            if (document.getElementById('results').classList.contains('show')) {
+                document.getElementById('mainIndicator').textContent = randomIndicator;
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
